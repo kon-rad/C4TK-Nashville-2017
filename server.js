@@ -26,9 +26,9 @@ app.get('/scrape', function(req, res) {
 
             // Define variables we're going to capture
 
-            var title, writer, lyrics, references, theme, tempo;
+            var title, writer, theme, tempo, reference, lyrics;
 
-            var json = { title : "", writer : "", lyrics : "", references : "", theme : "", tempo : ""};
+            var json = { title : "", writer : "", theme : "", tempo : "", reference : "", lyrics : "" };
 
             // Get the title
 
@@ -36,25 +36,46 @@ app.get('/scrape', function(req, res) {
 
                 var data = $(this);
 
-                title = data.text();
+                title = data.contents().first().text().trim();
 
                 json.title = title;                
             })
 
-            // Get the reference
 
-            $('div.song_taxonomy > div.row > p').filter(function() {
-                var data = $(this);
+            var data = $('div.song_taxonomy > div.row > p');
 
-                writer = data.children().first().text();
+            // // Get the writer                
 
-                reference = data.children().last().text();
+            writer = $('div.song_taxonomy > div.row > p').contents().eq(2).text().trim();
 
-                json.writer = writer;
+            json.writer = writer;
 
-                json.reference = reference;
+            // Get the theme
 
-            })
+            theme = data.contents().eq(6).text().trim();
+
+            json.theme = theme;                
+
+            // Get the tempo
+
+            tempo = data.contents().eq(11).text().trim();
+
+            json.tempo = tempo;   
+            
+            // Get the reference            
+
+            reference = data.contents().eq(20).text().trim();
+
+            json.reference = reference;  
+
+            // Get the lyrics
+
+            lyrics = $('div.chord-pro-disp').contents().text().trim();
+
+            lyrics = lyrics.replace(/(\r\n|\n|\r)/gm,"");
+            lyrics = lyrics.replace(/\s{160,161}/g,"\n");          
+            
+            json.lyrics = lyrics.replace(/\s{23}/g,"\n\n");
 
             console.log(json);
         }

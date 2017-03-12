@@ -8,95 +8,131 @@ var app = express();
 app.get('/scrape', function(req, res) {
 
     // The URL to scrape from
-    url = 'http://www.worshiptogether.com/songs/blessed-assurance';
+        var songArray = [
+         'grace',
+         '10-000-reasons-bless-the-lord',
+         'holy-spirit',
+         'cornerstone',
+         'how-great-is-our-god'
+        ];
+    // var songArray = [
+    //     'blessed-assurance', 
+    //     'lord-i-need-you', 
+    //     'grace',
+    //     '10-000-reasons-bless-the-lord',
+    //     'holy-spirit','cornerstone',
+    //     'how-great-is-our-god'
+    //     ];
 
-    // Structure of request call
+    for(var i = 0; i < songArray.length; i++) {
 
-    // The first parameter
+        // Define variables we're going to capture
 
-    // The callback function takes 3 params, error and response state code and the html
-
-    request(url, function(error, response, html) {
-
-        // First check for errors
-        if(!error) {
-            // use cheerio library on the returned html
-
-            var $ = cheerio.load(html);
-
-            // Define variables we're going to capture
-
-            var title, writer, theme, tempo, reference, lyrics;
-
-            var json = { title : "", writer : "", theme : "", tempo : "", reference : "", lyrics : "" };
-
-            // Get the title
-
-            $('h1').filter(function() {
-
-                var data = $(this);
-
-                title = data.contents().first().text().trim();
-
-                json.title = title;                
-            })
+        var url = 'http://www.worshiptogether.com/songs/' + songArray[i];
 
 
-            var data = $('div.song_taxonomy > div.row > p');
+        // Structure of request call
 
-            // // Get the writer                
+        // The first parameter
 
-            writer = $('div.song_taxonomy > div.row > p').contents().eq(2).text().trim();
+        // The callback function takes 3 params, error and response state code and the html
 
-            json.writer = writer;
+        request(url, function(error, response, html) {
 
-            // Get the theme
+            var title, author, general_references, raw_lyrics, filename;
 
-            theme = data.contents().eq(6).text().trim();
+            var json = { api_key : "shibboleet",
+                            song : {
+                                title : "",
+                                author : "", 
+                                general_references : "",
+                                raw_lyrics : "" 
+                    }
+                };
 
-            json.theme = theme;                
 
-            // Get the tempo
+            // First check for errors
+            if(!error) {
+                // use cheerio library on the returned html
+                var $ = cheerio.load(html);
 
-            tempo = data.contents().eq(11).text().trim();
+                // Get the title
 
-            json.tempo = tempo;   
-            
-            // Get the reference            
+                $('h1').filter(function() {
 
-            reference = data.contents().eq(20).text().trim();
+                    var data = $(this);
 
-            json.reference = reference;  
+                    title = data.contents().first().text().trim();
 
-            // Get the lyrics
+                    json.song.title = title; 
 
-            lyrics = $('div.chord-pro-disp').contents().text().trim();
+                    filename = title.replace(/\s+/g, '-').toLowerCase();               
+                })
 
-            lyrics = lyrics.replace(/(\r\n|\n|\r)/gm,"");
-            lyrics = lyrics.replace(/\s{160,161}/g,"\n");          
-            
-            json.lyrics = lyrics.replace(/\s{23}/g,"\n\n");
 
-            console.log(json);
-        }
+                var data = $('div.song_taxonomy > div.row ');
 
-        // To write to the system we will use the built in 'fs' library.
-        // In this example we will pass 3 parameters to the writeFile function
-        // Parameter 1 :  output.json - this is what the created filename will be called
-        // Parameter 2 :  JSON.stringify(json, null, 4) - the data to write, here we do an extra step by calling JSON.stringify to make our JSON easier to read
-        // Parameter 3 :  callback function - a callback function to let us know the status of our function
+                // // Get the writer 
 
-        fs.writeFile('output.json', JSON.stringify(json, null, 4), function(err){
+                artist = data.find("p:contains('Writer(s):')").contents().last().text().trim();
 
-            console.log('File successfully written! - Check your project directory for the output.json file');
+                //artist = $('div.song_taxonomy > div.row > p').contents().eq(2).text().trim();
 
-        })
+                json.song.artist = artist; 
+                
+                // Get the reference            
 
-        // Finally, we'll just send out a message to the browser reminding you that this app does not have a UI.
-        res.send('Check your console!')
+                general_references = data.find("p:contains('Scripture Reference')").contents().last().text().trim();
 
-    });
-})
+                general_references = general_references.replace(/-\d+(\:\d+)?/g, "");
+
+                json.song.general_references = general_references;  
+
+                // Get the lyrics
+
+                raw_lyrics = $('div.chord-pro-line, div.chord-pro-br').map(function() {
+                    if($(this).hasClass('chord-pro-br')) {
+                        return "\n";
+                    }
+                    return $(this).find('div.chord-pro-lyric').contents().map(function() {
+                        return $(this).text();
+                }).toArray().join('');
+                }).toArray().join('\n'); 
+
+                json.song.raw_lyrics = raw_lyrics.replace(/(\r)/gm,"");    
+                
+                fs.writeFileSync((filename + '.json'),JSON.stringify(json, null, 4) )                 
+
+                request.post('http://c4tk.somamou.org/songs', {form: json}, function(err, httpResponse, body){
+
+                    console.log('here');
+                    
+                    console.log(httpResponse.statusCode);
+                    console.log(err);
+                    if(err) throw err;
+                    
+                });
+
+                console.log(json);
+
+
+                // To write to the system we will use the built in 'fs' library.
+                // In this example we will pass 3 parameters to the writeFile function
+                // Parameter 1 :  output.json - this is what the created filename will be called
+                // Parameter 2 :  JSON.stringify(json, null, 4) - the data to write, here we do an extra step by calling JSON.stringify to make our JSON easier to read
+                // Parameter 3 :  callback function - a callback function to let us know the status of our function
+
+            } // end if error
+             
+        })  // end request 
+    } // end for loop
+
+
+    // Finally, we'll just send out a message to the browser reminding you that this app does not have a UI.
+    res.send('Check your console!')
+
+});
+
 
 app.listen('8081');
 

@@ -9,20 +9,32 @@ app.get('/scrape', function(req, res) {
 
     // The URL to scrape from
         var songArray = [
-         'grace',
-         '10-000-reasons-bless-the-lord',
-         'holy-spirit',
-         'cornerstone',
-         'how-great-is-our-god'
+            'desert-song',
+            'i-lift-my-hands',
+            'this-is-living-hillsong-young-and-free',
+            'let-there-be-light-hillsong-worship',
+            'sinking-deep',
+            'your-grace-is-enough',
+            'behold-the-lamb-communion-hymn',
+            'at-the-cross',
+            'sing-sing-sing',
+            'psalm-100',
+            'holy-spirit-rain-down',
+            'happy-day',
+            'how-great-thou-art',
+            'break-every-chain-tasha-cobbs',
+            'even-so-come',
+            'beautiful-one',
+            'i-will-rise',
+            'i-surrender-all-all-to-jesus',
+            'heal-our-land-kari-jobe',
+            'we-want-to-see-jesus-lifted-high',
+            'still',
+            'my-redeemer-lives',
+            'i-give-you-my-heart',
+            'no-other-name'
+
         ];
-    // var songArray = [
-    //     'blessed-assurance', 
-    //     'lord-i-need-you', 
-    //     'grace',
-    //     '10-000-reasons-bless-the-lord',
-    //     'holy-spirit','cornerstone',
-    //     'how-great-is-our-god'
-    //     ];
 
     for(var i = 0; i < songArray.length; i++) {
 
@@ -44,7 +56,7 @@ app.get('/scrape', function(req, res) {
             var json = { api_key : "shibboleet",
                             song : {
                                 title : "",
-                                author : "", 
+                                artist : "", 
                                 general_references : "",
                                 raw_lyrics : "" 
                     }
@@ -84,8 +96,6 @@ app.get('/scrape', function(req, res) {
 
                 general_references = data.find("p:contains('Scripture Reference')").contents().last().text().trim();
 
-                general_references = general_references.replace(/-\d+(\:\d+)?/g, "");
-
                 json.song.general_references = general_references;  
 
                 // Get the lyrics
@@ -101,7 +111,7 @@ app.get('/scrape', function(req, res) {
 
                 json.song.raw_lyrics = raw_lyrics.replace(/(\r)/gm,"");    
                 
-                fs.writeFileSync((filename + '.json'),JSON.stringify(json, null, 4) )                 
+                //fs.writeFileSync((filename + '.json'),JSON.stringify(json, null, 4) )                 
 
                 request.post('http://c4tk.somamou.org/songs', {form: json}, function(err, httpResponse, body){
 
